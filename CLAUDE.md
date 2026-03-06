@@ -16,11 +16,9 @@
 ## 프로필 목록
 
 ```
-ysu-cloud
-sancho-kusj
-sancho-gist
-sancho-shingu-cs
-sancho-nxtcloud-work
+account 1
+account 2
+account 3
 ```
 
 ## 출력 파일
