@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """AWS Dashboard - 당일 비용 전체 리전 HTML 대시보드 생성"""
 
+import os
 import boto3
 import requests
 import argparse
@@ -8,13 +9,10 @@ import subprocess
 from datetime import date, timedelta, datetime
 from botocore.exceptions import ClientError, NoCredentialsError
 
-PROFILES = [
-    "ysu-cloud",
-    "sancho-kusj",
-    "sancho-gist",
-    "sancho-shingu-cs",
-    "sancho-nxtcloud-work",
-]
+_profiles_env = os.environ.get("AWS_COST_PROFILES", "")
+if not _profiles_env:
+    raise SystemExit("환경변수 AWS_COST_PROFILES가 설정되지 않았습니다.\n예: export AWS_COST_PROFILES=profile1,profile2,profile3")
+PROFILES = [p.strip() for p in _profiles_env.split(",") if p.strip()]
 
 REGION_KR = {
     "ap-northeast-2": "서울",
