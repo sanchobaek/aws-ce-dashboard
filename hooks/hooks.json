@@ -1,0 +1,15 @@
+{
+  "description": "AWS Cost Dashboard - 세션 종료 시 대시보드 PNG 저장",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/save-dashboard.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
