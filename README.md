@@ -4,14 +4,23 @@ AWS 멀티 계정 비용을 조회하여 HTML 대시보드로 시각화하는 Cl
 
 ## 기능
 
-- 여러 AWS 계정 비용 조회 (USD → KRW 자동 환산)
+- 여러 AWS 계정 비용 조회 (USD → KRW 자동 환산, frankfurter.app 실시간 환율)
 - HTML 대시보드 생성 + 브라우저 자동 오픈
-- 세션 종료 시 PNG 자동 저장 (선택)
+- D-2 / D-1 / 기준일 3일치 비교 테이블
+
+## 사전 요구사항
+
+- Python 3 + `boto3`, `requests` 설치
+  ```bash
+  pip install boto3 requests
+  ```
+- `~/.aws/credentials`에 프로파일 설정
+- 각 계정 IAM에 `ce:GetCostAndUsage` 권한 필요
 
 ## 설치
 
 ```bash
-npx skills add github:<your-username>/aws-cost-dashboard
+npx skills add github:sanchobaek/aws-ce-dashboard
 ```
 
 ## 설정
@@ -21,8 +30,7 @@ npx skills add github:<your-username>/aws-cost-dashboard
 ```json
 {
   "env": {
-    "AWS_COST_PROFILES": "profile1,profile2,profile3",
-    "AWS_COST_SAVE_DIR": "/path/to/save/screenshots"
+    "AWS_COST_PROFILES": "profile1,profile2,profile3"
   }
 }
 ```
@@ -30,18 +38,77 @@ npx skills add github:<your-username>/aws-cost-dashboard
 | 환경변수 | 필수 | 설명 |
 |----------|------|------|
 | `AWS_COST_PROFILES` | 필수 | 조회할 AWS 프로파일 목록 (쉼표 구분). `~/.aws/credentials`의 `[프로파일명]`과 일치해야 함 |
-| `AWS_COST_SAVE_DIR` | 선택 | 세션 종료 시 대시보드 PNG를 저장할 폴더. 미설정 시 저장하지 않음 |
 
-## 사용법
+---
+
+## 커맨드
+
+### `/aws-cost-dashboard` — 요약 대시보드
+
+어제 기준으로 계정별 비용 요약 + 상위 3개 리전을 표시합니다.
 
 ```
-/aws-cost-dashboard          # 어제 기준
+/aws-cost-dashboard          # 어제 기준 (기본값)
 /aws-cost-dashboard 03.05    # 특정 날짜 기준
 ```
 
-## 사전 요구사항
+**결과 화면**
 
-- Python 3 + `boto3`, `requests` 설치 (`pip install boto3 requests`)
-- `~/.aws/credentials`에 프로파일 설정
-- 각 계정의 IAM에 `ce:GetCostAndUsage` 권한 필요
-- PNG 저장을 위해 Google Chrome 설치 필요
+브라우저에서 HTML 페이지가 열리며 아래 형태의 테이블이 표시됩니다:
+
+| 계정명 | 3/3 (월) | 3/4 (화) | 3/5 (수) ★ | 주요 리전 |
+|--------|----------|----------|-----------|----------|
+| ysu-cloud | 12,430원 | 13,100원 | **14,820원** | 서울 9,200원 • 버지니아 3,100원 |
+| kusj | 8,200원 | 7,900원 | **8,500원** | 서울 8,500원 |
+| 합계 | 20,630원 | 21,000원 | **23,320원** | - |
+
+- 기준일(★) 컬럼은 파란색으로 강조
+- 주요 리전: 기준일 기준 비용 상위 3개
+
+---
+
+### `/aws-dashboard` — 전체 리전 대시보드
+
+오늘 기준으로 계정별 비용 + 비용이 발생한 **모든 리전**을 표시합니다.
+
+```
+/aws-dashboard               # 오늘 기준 (기본값)
+/aws-dashboard 03.05         # 특정 날짜 기준
+```
+
+> **참고:** 당일 데이터는 AWS Cost Explorer 집계 지연(최대 24시간)으로 0원으로 표시될 수 있습니다. 날짜를 지정해서 사용하는 것을 권장합니다.
+
+**결과 화면**
+
+브라우저에서 HTML 페이지가 열리며 아래 형태의 테이블이 표시됩니다:
+
+| 계정명 | 3/4 (화) | 3/5 (수) | 3/6 (목) ★ | 모든 리전 (기준일) |
+|--------|----------|----------|-----------|-----------------|
+| ysu-cloud | 13,100원 | 14,820원 | **15,200원** | 서울 9,800원<br>버지니아 3,200원<br>오레곤 2,200원 |
+| kusj | 7,900원 | 8,500원 | **8,900원** | 서울 8,900원 |
+| 합계 | 21,000원 | 23,320원 | **24,100원** | - |
+
+- 기준일(★) 컬럼은 파란색으로 강조
+- 모든 리전: KRW 0원인 리전은 자동 제외
+
+---
+
+## 커맨드 비교
+
+| 항목 | `/aws-cost-dashboard` | `/aws-dashboard` |
+|------|----------------------|-----------------|
+| 기본 기준일 | 어제 | 오늘 |
+| 리전 표시 | 상위 3개 | 비용 발생 전체 리전 |
+| 0원 리전 | 포함 | 제외 |
+| 출력 파일 | `/tmp/aws_cost_dashboard.html` | `/tmp/aws_dashboard_all.html` |
+
+---
+
+## 오류 대응
+
+| 오류 | 원인 | 조치 |
+|------|------|------|
+| `NoCredentialsError` | `~/.aws/credentials`에 프로필 없음 | 프로필명 확인 |
+| `AccessDenied` | Cost Explorer 권한 없음 | IAM 정책에 `ce:GetCostAndUsage` 추가 |
+| 당일 데이터 0원 | Cost Explorer 집계 지연 (최대 24시간) | 어제 날짜로 조회 권장 |
+| 환율 조회 실패 | 네트워크 오류 | 기본값 1,450 KRW/USD 자동 적용 |
