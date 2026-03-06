@@ -1,11 +1,11 @@
 ---
-description: "AWS 비용 대시보드 생성 (전체 리전, 0원 제외)"
-argument-hint: "[날짜 MM.DD] (미입력시 오늘 기준)"
+name: aws-dashboard
+description: Use when the user asks to see AWS cost as a dashboard, HTML report, or wants all regions displayed. Triggers on: "오늘 비용", "당일 비용", "전체 리전", "aws-dashboard", "모든 리전 대시보드", "대시보드", "dashboard", "html로 보여줘", "브라우저로 보여줘", "비용 대시보드".
 ---
 
 # AWS Dashboard (전체 리전)
 
-이 커맨드가 호출되면 아래 절차를 따른다.
+이 스킬이 호출되면 아래 절차를 따른다.
 
 ## 날짜 결정
 
@@ -16,12 +16,12 @@ argument-hint: "[날짜 MM.DD] (미입력시 오늘 기준)"
 
 날짜를 명시한 경우:
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/aws_dashboard.py --date YYYY-MM-DD
+python3 ~/.claude/skills/aws-dashboard/aws_dashboard.py --date YYYY-MM-DD
 ```
 
 날짜 미지정 (오늘 기준):
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/aws_dashboard.py
+python3 ~/.claude/skills/aws-dashboard/aws_dashboard.py
 ```
 
 ## 출력
@@ -31,18 +31,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/aws_dashboard.py
 - 기준일 컬럼 파란색 강조
 - 비용이 발생한 리전만 표시 (KRW 0원 리전 제외)
 
-## aws-cost-dashboard와의 차이점
-
-| 항목 | /aws-cost-dashboard | /aws-dashboard |
-|------|---------------------|----------------|
-| 기본 기준일 | 어제 | 오늘 |
-| 리전 표시 | 상위 3개 | 비용 발생 전체 리전 |
-| 0원 리전 | 포함 | 제외 |
-
 ## 오류 대응
 
 | 오류 | 원인 | 조치 |
 |------|------|------|
 | NoCredentialsError | ~/.aws/credentials에 프로필 없음 | 프로필명 확인 |
 | AccessDenied | Cost Explorer 권한 없음 | IAM 정책에 ce:GetCostAndUsage 추가 필요 |
-| 당일 데이터 0원 | Cost Explorer 집계 지연 (최대 24시간) | 정상 현상, 어제 날짜로 확인 권장 |
+| 당일 데이터 0원 | Cost Explorer 집계 지연 (최대 24시간) | 정상 현상, 날짜 지정 권장 |
